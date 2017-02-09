@@ -1,5 +1,6 @@
 var express = require('express');
 var bodyParser = require('body-parser');
+var fs = require('fs');
 
 var app = express();
 
@@ -11,17 +12,41 @@ app.use(bodyParser.urlencoded({
 
 app.use(express.static('public'));
 
-var comments = [
-        {'name': 'Jon', 'email': 'jon@host.com', 'comment': 'Something to say'}
-    ];
 
 app.get('/api/comments', function(req, res) {
-    res.json(comments);
+    fs.readFile('comments.json', function(err, data) {
+        if (err) {
+            console.log(err);
+            res.sendStatus(500);
+            return;
+        }
+
+        res.json(JSON.parse(data.toString()));
+    })
 })
 
 app.post('/api/comments', function(req, res) {
-    comments.unshift(req.body);
-    res.json({'status': 'OK'});
+    fs.readFile('comments.json', function(err, data) {
+        if (err) {
+            console.log(err);
+            res.sendStatus(500);
+            return;
+        }
+
+        var comments = JSON.parse(data.toString());
+
+        comments.unshift(req.body);
+
+        fs.writeFile('comments.json', JSON.stringify(comments), function(err) {
+            if (err) {
+                console.log(err);
+                res.sendStatus(500);
+                return;
+            }
+
+            res.json({'status': 'OK'});
+        })
+    })
 });
 
 app.listen(3000, function() {
